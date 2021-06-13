@@ -83,6 +83,27 @@ public class GameTetris {
         frame.setVisible(true);
 
         Arrays.fill(mine[FIELD_HEIGHT], 1);
+
+        while(!gameOver){
+            try{
+                Thread.sleep(SHOW_DELAY);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            canvasPanel.repaint();
+            if(figure.isTochGround()){
+                figure.leaveOnTheGround();
+                checkFilling();
+                figure = new Figure();
+                gameOver = figure.isCrossGround();
+            }else{
+                figure.stepDown();
+            }
+        }
+    }
+
+    void checkFilling(){
+
     }
 
     class Figure {
@@ -97,6 +118,22 @@ public class GameTetris {
 
         public void move(int direction) {
 
+        }
+
+        public boolean isTochGround() {
+            return false;
+        }
+
+        public void leaveOnTheGround() {
+
+        }
+
+        public void stepDown() {
+
+        }
+
+        public boolean isCrossGround() {
+            return false;
         }
     }
 
