@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class GameTetris {
@@ -63,7 +64,7 @@ public class GameTetris {
         frame = new JFrame(TITLE_OF_PROGRAM);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(FIELD_WIDTH * BLOCK_SIZE + FIELD_DX,
-                FIELD_HEIGHT * BLOCK_SIZE +FIELD_DY);
+                FIELD_HEIGHT * BLOCK_SIZE + FIELD_DY);
         frame.setLocation(START_LOCATION, START_LOCATION);
         frame.setResizable(false);
         canvasPanel.setBackground(Color.BLACK);
@@ -79,34 +80,63 @@ public class GameTetris {
                 canvasPanel.repaint();
             }
         });
-        frame.getContentPane().add(BorderLayout.CENTER, canvasPanel);
+        frame.getContentPane()
+                .add(BorderLayout.CENTER, canvasPanel);
         frame.setVisible(true);
 
         Arrays.fill(mine[FIELD_HEIGHT], 1);
 
-        while(!gameOver){
-            try{
+        while (!gameOver) {
+            try {
                 Thread.sleep(SHOW_DELAY);
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             canvasPanel.repaint();
-            if(figure.isTochGround()){
+            if (figure.isTochGround()) {
                 figure.leaveOnTheGround();
                 checkFilling();
                 figure = new Figure();
                 gameOver = figure.isCrossGround();
-            }else{
+            } else {
                 figure.stepDown();
             }
         }
     }
 
-    void checkFilling(){
+    void checkFilling() {
 
     }
 
     class Figure {
+        private ArrayList<Block> figure = new ArrayList<>();
+        private int[][] shape = new int[4][4];
+        private int type, size, color;
+        private int x = 1, y = 0;
+
+        Figure() {
+            type = random.nextInt(SHAPES.length);
+            size = SHAPES[type][4][0];
+            color = SHAPES[type][4][1];
+            if (size == 4) y = -1;
+            for (int i = 0; i < size; i++)
+                System.arraycopy(SHAPES[type][i], 0, shape[i],
+                        0, SHAPES[type][i].length);
+            createFromShape();
+        }
+
+        void createFromShape() {
+            for (int x = 0; x < size; x++)
+                for (int y = 0; y < size; y++)
+                    if (shape[y][x] == 1) figure.add(new Block(x + this.x, y + this.y));
+        }
+
+        void paint(Graphics g) {
+            for (Block block : figure) {
+                block.paint(g, color);
+            }
+        }
+
 
         public void drop() {
 
@@ -121,15 +151,21 @@ public class GameTetris {
         }
 
         public boolean isTochGround() {
+            for (Block block : figure) {
+                if (mine[block.getY() + 1][block.getX()] > 0) return true;
+            }
             return false;
         }
 
         public void leaveOnTheGround() {
-
+            for (Block block : figure) mine[block.getY()][block.getX()] = color;
         }
 
         public void stepDown() {
-
+            for (Block block : figure) {
+                block.setY(block.getY() + 1);
+                y++;
+            }
         }
 
         public boolean isCrossGround() {
@@ -137,14 +173,61 @@ public class GameTetris {
         }
     }
 
-    class Block{
+    class Block {
+        private int x, y;
 
+        public Block(int x, int y) {
+            setX(x);
+            setY(y);
+        }
+
+        private void setX(int x) {
+            this.x = x;
+        }
+
+        private void setY(int y) {
+            this.y = y;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        void paint(Graphics g, int color) {
+            g.setColor(new Color(color));
+            g.drawRoundRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1,
+                    BLOCK_SIZE - 2, BLOCK_SIZE - 2, ARC_RADIUS, ARC_RADIUS);
+        }
     }
 
-    public class Canvas extends JPanel{
+    public class Canvas extends JPanel {
         @Override
         public void paint(Graphics g) {
             super.paint(g);
+            for (int x = 0; x < FIELD_WIDTH; x++)
+                for (int y = 0; y < FIELD_HEIGHT; y++) {
+                    if (x < FIELD_WIDTH - 1 && y < FIELD_HEIGHT - 1) {
+                        g.setColor(Color.lightGray);
+                        g.drawLine((x + 1) * BLOCK_SIZE - 2, (y + 1) * BLOCK_SIZE, (x + 1) * BLOCK_SIZE + 2, (y + 1) * BLOCK_SIZE);
+                        g.drawLine((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE - 2, (x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE + 2);
+                    }
+                    if (mine[y][x] > 0) {
+                        g.setColor(new Color(mine[y][x]));
+                        g.fill3DRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1, BLOCK_SIZE - 1, BLOCK_SIZE - 1, true);
+                    }
+                }
+            if (gameOver) {
+                g.setColor(Color.white);
+                for (int y = 0; y < GAME_OVER_MSG.length; y++)
+                    for (int x = 0; x < GAME_OVER_MSG[y].length; x++)
+                        if (GAME_OVER_MSG[y][x] == 1) g.fill3DRect(x * 11 + 18, y * 11 + 160, 10, 10, true);
+            } else
+                figure.paint(g);
         }
     }
 }
+
